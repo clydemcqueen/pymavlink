@@ -1562,13 +1562,17 @@ class mavmmaplog(mavlogfile):
                 if not mtype in mavlink.mavlink_map:
                     ofs += mlen
                     continue
-                self.offsets[mtype] = []
-                self.counts[mtype] = 0
                 msg = mavlink.mavlink_map[mtype]
                 self.name_to_id[msg.msgname] = mtype
                 self.id_to_name[mtype] = msg.msgname
                 self.f.seek(ofs)
                 m = self.recv_msg()
+                if m is None or m.get_type() == 'BAD_DATA':
+                    # We failed to parse this message, so we can't use it to initialize the instance offsets
+                    ofs += mlen
+                    continue
+                self.offsets[mtype] = []
+                self.counts[mtype] = 0
                 add_message(self.messages, msg.msgname, m)
                 if m._instance_field is not None:
                     instance_idx = m.ordered_fieldnames.index(m._instance_field)
